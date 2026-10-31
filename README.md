@@ -31,8 +31,8 @@ Wrapped in pure **Jetpack Compose**, FineVolume features modern rectangular squi
 ## ✨ Key Features
 
 ### 🎚️ 120-Step Granular Precision
-- **Bypass OS Limitations**: Increases media volume granularity from 15 coarse notches to **120 micro-steps** for perfect acoustic tuning with headphones, IEMs, and Bluetooth speakers.
-- **Cubic Perceptual Taper ($x^3$)**: Logarithmic volume curve modeled after the human ear's sensitivity, ensuring changes feel linear and natural at low, medium, and high volumes.
+- **Sub-step software attenuation**: Combines the native Android media-volume index with Shizuku player-level float gain to make adjustments finer than the device's exposed hardware steps. Actual behaviour depends on the player app, Android build, output route, and audio framework.
+- **Perceptual interpolation**: FineVolume applies a cubic attenuation curve within each native step. This is a software gain stage, not a bit-perfect or lossless volume path.
 
 ### 🎨 Pixel / Android 17 Material You Design
 - **Modern Rectangular Squircle**: Clean, contemporary squircle geometry (`18dp` outer container, `14dp` slider tracks) instead of outdated circular stadium pills.
@@ -61,8 +61,8 @@ Wrapped in pure **Jetpack Compose**, FineVolume features modern rectangular squi
 
 ### 🎵 Per-App Volume Control
 - **Independent App Sliders**: Automatically detects running audio apps (Spotify, YouTube, Chrome, VLC, YouTube Music, Games, etc.) and provides individual volume sliders inside the expanded panel.
-- **Deep Shizuku Audio Hook**: Attenuates audio sessions directly at the Android audio framework level without requiring root.
-- **Real-Time Playback Tracking**: Accurately tracks when apps start, pause, or finish playback.
+- **Shizuku player attenuation**: Applies software gain to active player sessions through Android's hidden PlayerProxy interface. This requires a compatible player and working Shizuku service, and is not a guaranteed per-app volume API.
+- **Playback-session tracking**: Tracks active audio playback configurations and reapplies saved gains when Android reports session changes. Some players may recreate sessions or manage their own volume, so verify behaviour with each app.
 
 ### ⏸️ Pause Mode & Security Compatibility
 - **One-Tap Quick Pause**: Temporarily pause FineVolume with one switch in Settings whenever you need to bypass banking or security apps that block third-party accessibility services.
@@ -71,7 +71,7 @@ Wrapped in pure **Jetpack Compose**, FineVolume features modern rectangular squi
 ### ⌨️ Physical Volume Button Engine
 - **Single Press**: Steps exactly 1 FineVolume increment.
 - **Smooth Long Press**: Continuous, rapid volume transitions with automatic repeat loops.
-- **Zero OEM Clashing**: Native volume dialog is cleanly superseded by FineVolume's accessibility overlay.
+- **Hardware key interception**: An enabled AccessibilityService can consume volume-key events and show FineVolume's own overlay. OEM behaviour and other accessibility services can affect key-event delivery.
 
 ---
 
