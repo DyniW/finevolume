@@ -34,6 +34,7 @@ class ShizukuPlayerBackend @Inject constructor(
     override val type = BackendType.SHIZUKU_PLAYER
 
     @Volatile private var userService: IFineVolumeService? = null
+    @Volatile var onServiceFailure: ((String) -> Unit)? = null
     val currentUserService: IFineVolumeService? get() = userService
     @Volatile private var currentSessionGain: Float = 1.0f
     @Volatile private var cachedMaxVolume: Int = -1
@@ -50,7 +51,13 @@ class ShizukuPlayerBackend @Inject constructor(
     }
 
     fun bindUserService(service: IFineVolumeService) {
+        if (!service.asBinder().isBinderAlive || !service.asBinder().pingBinder()) {
+            handleServiceFailure("Shizuku audio service binder is already dead.")
+            return
+        }
         userService = service
+        currentSessionGain = 1.0f
+        lastAppliedGain = -1f
     }
 
     fun unbindUserService() {
@@ -59,6 +66,30 @@ class ShizukuPlayerBackend @Inject constructor(
         lastAppliedNativeIndex = -1
         lastAppliedGain = -1f
     }
+
+    private fun handleServiceFailure(reason: String) {
+        userService = null
+        currentSessionGain = 1.0f
+        lastAppliedGain = -1f
+        onServiceFailure?.invoke(reason)
+    }
+
+    /**
+     * Executes a small read-only AIDL call to verify that the optional user
+     * service is alive and responsive. It does not alter the device volume.
+     */
+    fun probeUserService(): Result<Int> {
+        val service = userService
+            ?: return Result.failure(IllegalStateException("Shizuku audio user service is not bound."))
+        return runCatching {
+            val binder = service.asBinder()
+            check(binder.isBinderAlive && binder.pingBinder()) { "Shizuku audio service binder is dead." }
+            service.getActiveSessionCount(AudioManager.STREAM_MUSIC)
+        }.onFailure {
+            handleServiceFailure(it.message ?: it.javaClass.simpleName)
+        }
+    }
+
 
     override suspend fun getState(stream: AudioStream): VolumeState {
         val max = getMaxVolume(stream)
@@ -120,7 +151,11 @@ class ShizukuPlayerBackend @Inject constructor(
                     lastAppliedGain = sessionGain
                     try {
                         service.applySessionGain(stream.androidStream, sessionGain)
-                    } catch (_: Exception) {}
+                    } catch (t: Throwable) {
+                        // Keep the native AudioManager stream adjustment. Only the
+                        // optional fractional player gain is dropped on IPC failure.
+                        handleServiceFailure(t.message ?: t.javaClass.simpleName)
+                    }
                 }
             }
         }
@@ -128,7 +163,8 @@ class ShizukuPlayerBackend @Inject constructor(
 
     override fun capabilities(): VolumeCapabilities {
         val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        val hasService = userService != null
+        val hasService = userService?.asBinder()?.let { it.isBinderAlive && it.pingBinder() } == true
+        if (!hasService && userService != null) handleServiceFailure("Shizuku audio service binder is not alive.")
         return VolumeCapabilities(
             // With float sub-step gain, effective resolution is very high.
             // 1000 is a practical upper limit — beyond this, gain differences are inaudible.
