@@ -1508,7 +1508,7 @@ fun PixelVerticalSlider(
                             val now = android.os.SystemClock.uptimeMillis()
                             if (now - lastHapticTime >= 35L) {
                                 lastHapticTime = now
-                                hapticFeedbackManager?.vibrate(hapticLevel)
+                                hapticFeedbackManager?.vibrate(hostView, hapticLevel)
                             }
                         }
                         onInteraction()
