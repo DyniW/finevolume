@@ -5,7 +5,7 @@
 <h1 align="center">FineVolume</h1>
 
 <p align="center">
-  <strong>Pixel-Fidelity Android 17 Volume Panel with 120-Step Ultra-Fine Precision</strong>
+  <strong>One UI-Inspired Android Volume Panel with 120-Step Fine Adjustment</strong>
 </p>
 
 <p align="center">
@@ -20,11 +20,11 @@
 
 ## 🌟 Overview
 
-By default, Android hardcodes media volume into a coarse **15 steps**, often leaving you stuck between *"a bit too quiet"* and *"painfully loud"*.
+Android's exposed media-volume range varies by device, firmware, route, and audio stack. FineVolume adds a fine-control layer on top of that native range.
 
-**FineVolume** replaces your phone's native volume panel with an ultra-responsive, pixel-accurate **Android 17 / Pixel SystemUI volume slider** powered by a Shizuku high-precision audio proxy that unlocks **120 granular volume levels**.
+**FineVolume** intercepts supported hardware volume-key events through its AccessibilityService and displays a custom, **Samsung One UI-inspired extended volume panel**. The expanded sheet provides system-stream controls and active-app sliders. It is an app-owned overlay, not a replacement for Samsung's SystemUI implementation.
 
-Wrapped in pure **Jetpack Compose**, FineVolume features modern rectangular squircle geometry, a prominent divider handle, fluid spring animations, zero background dimming, and seamless hardware key repeat.
+The interface is built with **Jetpack Compose**, with separated labels, readable volume tracks, touch adjustment, and hardware-key repeat.
 
 ---
 
