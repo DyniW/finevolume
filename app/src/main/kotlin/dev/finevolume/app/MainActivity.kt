@@ -416,20 +416,23 @@ private fun RepeatableStepButton(
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        latestOnStep()
-                        val repeatJob = launch {
-                            delay(350L)
-                            while (isActive) {
-                                latestOnStep()
-                                delay(55L)
+                kotlinx.coroutines.coroutineScope {
+                    val repeatScope = this
+                    detectTapGestures(
+                        onPress = {
+                            latestOnStep()
+                            val repeatJob = repeatScope.launch {
+                                delay(350L)
+                                while (isActive) {
+                                    latestOnStep()
+                                    delay(55L)
+                                }
                             }
+                            tryAwaitRelease()
+                            repeatJob.cancel()
                         }
-                        tryAwaitRelease()
-                        repeatJob.cancel()
-                    }
-                )
+                    )
+                }
             }
             .semantics {
                 contentDescription = description
