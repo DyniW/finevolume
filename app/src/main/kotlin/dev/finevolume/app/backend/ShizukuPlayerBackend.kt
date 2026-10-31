@@ -19,10 +19,9 @@ import javax.inject.Singleton
  * This provides genuine float-precision volume control for active media sessions.
  *
  * AUDIO QUALITY NOTE:
- * IPlayer.setVolume() applies a float multiplier in the Android software mixer.
- * This is equivalent to what every app does internally — no additional quality loss.
- * Gain is attenuation only (≤ 1.0f) unless bit-perfect protection is disabled
- * and amplification is explicitly requested by the user.
+ * IPlayer.setVolume() applies a software gain multiplier to the player output.
+ * This is digital attenuation and is not bit-perfect. FineVolume clamps gain to
+ * 0..1 and does not claim lossless or exclusive audio output.
  *
  * Shizuku is optional — this backend is only used when Shizuku is connected and
  * the user service is bound. Falls back to NativeVolumeBackend automatically.
