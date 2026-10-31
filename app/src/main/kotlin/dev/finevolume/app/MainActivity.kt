@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.rememberUpdatedState
