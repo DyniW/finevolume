@@ -114,7 +114,7 @@ The interface is built with **Jetpack Compose**, with separated labels, readable
 
 ### Required Permissions
 1. **Accessibility Service**: Intercepts physical volume button presses.
-2. **Shizuku (Optional / Recommended)**: Grants elevated permission to apply granular 120-step audio scaling to media sessions without root.
+2. **Shizuku (Optional)**: Enables a hidden player-level software attenuation path on compatible devices and players. This is not a public Android API and is not bit-perfect. Without Shizuku or root, FineVolume uses the public AudioManager API and is limited to the device's native shared media-volume steps.
 3. **Do Not Disturb (Notification Policy)**: Allows toggling between Ring, Vibrate, and Silent modes directly from the overlay.
 
 ---
