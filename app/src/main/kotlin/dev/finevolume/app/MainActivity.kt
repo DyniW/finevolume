@@ -360,7 +360,7 @@ fun ConfigurationCard(
                         .padding(12.dp)
                 ) {
                     Text(
-                        "Hardware limited to $effectiveValue. Enable Shizuku for full resolution.",
+                        "Native Android volume provides $effectiveValue hardware steps. This mode works without Shizuku or root; public Android APIs do not expose per-app sub-step gain.",
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         style = MaterialTheme.typography.bodySmall
                     )
