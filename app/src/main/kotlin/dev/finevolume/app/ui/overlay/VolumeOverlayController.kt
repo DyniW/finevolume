@@ -919,7 +919,7 @@ fun ExpandedVolumeDialog(
                             callVol = v
                             val index = (v * callMax).toInt().coerceIn(0, callMax.toInt())
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, index, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                         },
                         onInteraction = onInteraction,
@@ -932,7 +932,7 @@ fun ExpandedVolumeDialog(
                         onTrailingIconClick = {
                             val target = if (callVol > 0f) 0 else (callMax * 0.5f).toInt()
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, target, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                             callVol = target / callMax
                         }
@@ -947,7 +947,7 @@ fun ExpandedVolumeDialog(
                             ringVol = v
                             val index = (v * ringMax).toInt().coerceIn(0, ringMax.toInt())
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_RING, index, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_RING, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                         },
                         onInteraction = onInteraction,
@@ -960,7 +960,7 @@ fun ExpandedVolumeDialog(
                         onTrailingIconClick = {
                             val target = if (ringVol > 0f) 0 else (ringMax * 0.5f).toInt()
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_RING, target, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_RING, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                             ringVol = target / ringMax
                         }
@@ -976,7 +976,7 @@ fun ExpandedVolumeDialog(
                                 notifVol = v
                                 val index = (v * notifMax).toInt().coerceIn(0, notifMax.toInt())
                                 try {
-                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, index, 0)
+                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                                 } catch (_: Throwable) {}
                             }
                         },
@@ -991,7 +991,7 @@ fun ExpandedVolumeDialog(
                             if (!isRingMuted) {
                                 val target = if (notifVol > 0f) 0 else (notifMax * 0.5f).toInt()
                                 try {
-                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, target, 0)
+                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                                 } catch (_: Throwable) {}
                                 notifVol = target / notifMax
                             }
@@ -1025,7 +1025,7 @@ fun ExpandedVolumeDialog(
                             alarmVol = v
                             val index = (v * alarmMax).toInt().coerceIn(0, alarmMax.toInt())
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, index, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                         },
                         onInteraction = onInteraction,
@@ -1038,7 +1038,7 @@ fun ExpandedVolumeDialog(
                         onTrailingIconClick = {
                             val target = if (alarmVol > 0f) 0 else (alarmMax * 0.5f).toInt()
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, target, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                             alarmVol = target / alarmMax
                         }
@@ -1270,6 +1270,7 @@ fun PixelHorizontalSlider(
     var lastReportedStep by remember { mutableStateOf(-1) }
     var lastHapticTime by remember { mutableStateOf(0L) }
     val density = LocalDensity.current
+    val hostView = androidx.compose.ui.platform.LocalView.current
     val res = resolution.coerceAtLeast(1)
 
     val animatedValue by animateFloatAsState(
@@ -1287,7 +1288,7 @@ fun PixelHorizontalSlider(
             val now = android.os.SystemClock.uptimeMillis()
             if (now - lastHapticTime >= 35L) {
                 lastHapticTime = now
-                hapticFeedbackManager?.vibrate(hapticLevel)
+                hapticFeedbackManager?.vibrate(hostView, hapticLevel)
             }
         }
     }
@@ -1445,6 +1446,7 @@ fun PixelVerticalSlider(
     var lastReportedStep by remember { mutableStateOf(-1) }
     var lastHapticTime by remember { mutableStateOf(0L) }
     val density = LocalDensity.current
+    val hostView = androidx.compose.ui.platform.LocalView.current
     val res = resolution.coerceAtLeast(1)
 
     val animatedVolume by animateFloatAsState(
@@ -1487,7 +1489,7 @@ fun PixelVerticalSlider(
                                 val now = android.os.SystemClock.uptimeMillis()
                                 if (now - lastHapticTime >= 35L) {
                                     lastHapticTime = now
-                                    hapticFeedbackManager?.vibrate(hapticLevel)
+                                    hapticFeedbackManager?.vibrate(hostView, hapticLevel)
                                 }
                             }
                         }
