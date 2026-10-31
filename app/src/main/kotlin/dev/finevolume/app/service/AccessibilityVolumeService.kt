@@ -1,6 +1,10 @@
 package dev.finevolume.app.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.os.Build
@@ -33,11 +37,23 @@ class AccessibilityVolumeService : AccessibilityService() {
     private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
     private var repeatJob: Job? = null
     private var consumingVolumeKey = false
+    private var systemAudioReceiverRegistered = false
+
+    private val systemAudioChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            repeatJob?.cancel()
+            repeatJob = null
+            scope.launch {
+                volumeController.invalidatePrecisePosition(AudioStream.MUSIC)
+            }
+        }
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         try {
             volumeOverlayController.attachContext(this)
+            registerSystemAudioChangeReceiver()
 
             // Conflated drag processor prioritizes the latest slider position.
             scope.launch {
@@ -78,6 +94,26 @@ class AccessibilityVolumeService : AccessibilityService() {
                 }
             }
         } catch (_: Exception) {}
+    }
+
+    private fun registerSystemAudioChangeReceiver() {
+        if (systemAudioReceiverRegistered) return
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_POWER_CONNECTED)
+            addAction(Intent.ACTION_POWER_DISCONNECTED)
+            addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(systemAudioChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("DEPRECATION")
+                registerReceiver(systemAudioChangeReceiver, filter)
+            }
+            systemAudioReceiverRegistered = true
+        } catch (_: Exception) {
+            systemAudioReceiverRegistered = false
+        }
     }
 
     /**
@@ -212,6 +248,10 @@ class AccessibilityVolumeService : AccessibilityService() {
     override fun onInterrupt() {
         repeatJob?.cancel()
         repeatJob = null
+        consumingVolumeKey = false
+        scope.launch {
+            volumeController.invalidatePrecisePosition(AudioStream.MUSIC)
+        }
     }
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {
@@ -226,6 +266,10 @@ class AccessibilityVolumeService : AccessibilityService() {
         repeatJob?.cancel()
         repeatJob = null
         consumingVolumeKey = false
+        if (systemAudioReceiverRegistered) {
+            runCatching { unregisterReceiver(systemAudioChangeReceiver) }
+            systemAudioReceiverRegistered = false
+        }
         dragChannel.close()
         scope.cancel()
         volumeOverlayController.detachContext()
