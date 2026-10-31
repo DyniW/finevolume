@@ -151,8 +151,18 @@ class FineVolumeUserService : IFineVolumeService.Stub() {
         return null
     }
 
+    private fun isMusicSession(config: AudioPlaybackConfiguration): Boolean {
+        val attributes = config.audioAttributes ?: return false
+        return runCatching {
+            attributes.volumeControlStream == AudioManager.STREAM_MUSIC
+        }.getOrDefault(false)
+    }
+
     private fun applyGainToConfig(config: AudioPlaybackConfiguration) {
         try {
+            // STREAM_MUSIC attenuation must not alter calls, alarms, ringtones,
+            // notification sounds, or other non-media playback sessions.
+            if (!isMusicSession(config)) return
             val playerProxy = getPlayerProxyMethod?.invoke(config) ?: return
             val uid = getUidForConfig(config)
             val packageName = if (uid > 0) getPackageNameForUid(uid) else null
@@ -194,6 +204,7 @@ class FineVolumeUserService : IFineVolumeService.Stub() {
         }.getOrDefault(emptyList())
 
         return configs.mapNotNull { config ->
+            if (!isMusicSession(config)) return@mapNotNull null
             val state = runCatching { getPlayerStateMethod?.invoke(config) as? Int }
                 .getOrNull()
             val isPlaying = state?.let { it == 2 } ?: runCatching {
