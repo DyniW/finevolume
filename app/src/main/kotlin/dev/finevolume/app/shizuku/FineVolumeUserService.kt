@@ -4,7 +4,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
 import android.os.Handler
-import android.os.Looper
+import android.os.HandlerThread
 import android.util.Log
 import androidx.annotation.Keep
 import java.lang.reflect.Method
@@ -28,6 +28,7 @@ class FineVolumeUserService : IFineVolumeService.Stub() {
     private var getPlayerStateMethod: Method? = null
     private var getClientUidMethod: Method? = null
     private var clientUidField: java.lang.reflect.Field? = null
+    private var callbackThread: HandlerThread? = null
     private var callbackHandler: Handler? = null
 
     private val appGainMap = java.util.concurrent.ConcurrentHashMap<String, Float>()
@@ -49,11 +50,11 @@ class FineVolumeUserService : IFineVolumeService.Stub() {
 
     init {
         try {
-            val looper = Looper.myLooper() ?: run {
-                Looper.prepare()
-                Looper.myLooper()
-            }
-            callbackHandler = Handler(looper ?: Looper.getMainLooper())
+            // User-service Binder threads do not have a running Looper by default.
+            // Use a dedicated thread so playback callbacks and delayed gain retries
+            // are always dispatched instead of being queued on an idle Looper.
+            callbackThread = HandlerThread("FineVolumePlaybackObserver").apply { start() }
+            callbackHandler = Handler(requireNotNull(callbackThread).looper)
 
             val activityThreadClass = Class.forName("android.app.ActivityThread")
             val systemMainMethod = activityThreadClass.getDeclaredMethod("systemMain").apply {
@@ -233,6 +234,9 @@ class FineVolumeUserService : IFineVolumeService.Stub() {
             audioManager?.unregisterAudioPlaybackCallback(playbackCallback)
         }
         callbackHandler?.removeCallbacksAndMessages(null)
+        callbackThread?.quitSafely()
+        callbackThread = null
+        callbackHandler = null
         Log.i(TAG, "FineVolumeUserService destroy")
         exitProcess(0)
     }
