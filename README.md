@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Android-10.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android 10+"/>
   <img src="https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"/>
-  <img src="https://img.shields.io/badge/Design-Material%20You%20%2F%20Pixel-7C4DFF?style=flat-square" alt="Pixel Design"/>
+  <img src="https://img.shields.io/badge/Design-Material%20You%20%2F%20Pixel-7C4DFF?style=flat-square" alt="Samsung One UI inspired"/>
   <img src="https://img.shields.io/badge/Security-100%25%20Offline-00C853?style=flat-square" alt="100% Offline"/>
   <img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square" alt="License"/>
 </p>
@@ -34,11 +34,11 @@ The interface is built with **Jetpack Compose**, with separated labels, readable
 - **Sub-step software attenuation**: Combines the native Android media-volume index with Shizuku player-level float gain to make adjustments finer than the device's exposed hardware steps. Actual behaviour depends on the player app, Android build, output route, and audio framework.
 - **Perceptual interpolation**: FineVolume applies a cubic attenuation curve within each native step. This is a software gain stage, not a bit-perfect or lossless volume path.
 
-### 🎨 Pixel / Android 17 Material You Design
-- **Modern Rectangular Squircle**: Clean, contemporary squircle geometry (`18dp` outer container, `14dp` slider tracks) instead of outdated circular stadium pills.
-- **Prominent Divider Bar**: Distinct `5.5dp` horizontal indicator bar with smooth capsule rounding, dividing active and inactive volume tracks.
+### 🎨 Samsung One UI-Inspired Volume Panels
+- **Clear expanded controls**: Stream and app names and percentages sit above their volume tracks, avoiding text overlap at low volume levels.
+- **Distinct volume position**: A separate divider marks the current level on a rounded active/inactive track.
 - **Edge-Optimized Geometry**: Engineered with vertical clearance so the divider bar **never shrinks, clips, or deforms** at minimum ($0\%$) or maximum ($100\%$) volume.
-- **Dynamic Color Support**: Seamlessly adapts to your system wallpaper with Material You dynamic color schemes in light and dark modes.
+- **Dynamic Color Support**: Uses Material You dynamic colors in light and dark modes.
 
 ### 📱 Dual-State Interactive Overlays
 
