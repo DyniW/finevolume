@@ -96,11 +96,14 @@ class ShizukuPlayerBackend @Inject constructor(
             val ceilIndex = kotlin.math.ceil(floatIndex).toInt().coerceIn(0, max)
             val nativeIndex = ceilIndex
 
-            // 1. Set the native index only when changed — skips 87%+ redundant system IPC
-            if (nativeIndex != lastAppliedNativeIndex) {
+            // Compare against the actual system value, not only our last write.
+            // Samsung SystemUI, Samsung Music, accessories, or another controller can
+            // change the stream index independently while FineVolume is running.
+            val actualNativeIndex = audioManager.getStreamVolume(stream.androidStream)
+            if (nativeIndex != actualNativeIndex) {
                 audioManager.setStreamVolume(stream.androidStream, nativeIndex, 0)
-                lastAppliedNativeIndex = nativeIndex
             }
+            lastAppliedNativeIndex = nativeIndex
 
             // 2. Apply fractional attenuation within the native step via Shizuku
             val service = userService
