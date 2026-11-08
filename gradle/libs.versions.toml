@@ -1,8 +1,8 @@
 [versions]
-kotlin = "1.9.24"
-agp = "8.1.4"
+kotlin = "2.2.10"
+agp = "9.5.0"
 compose-bom = "2024.02.01"
-hilt = "2.51.1"
+hilt = "2.60.1"
 datastore = "1.1.1"
 shizuku = "13.1.5"
 coroutines = "1.8.1"
@@ -44,4 +44,5 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
