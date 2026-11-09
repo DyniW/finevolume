@@ -9,6 +9,22 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -254,14 +270,31 @@ fun ConfigurationCard(
     displayTransform: ((Float) -> String)? = null
 ) {
     var sliderValue by androidx.compose.runtime.remember(value) {
-        androidx.compose.runtime.mutableFloatStateOf(value)
+        androidx.compose.runtime.mutableFloatStateOf(
+            value.coerceIn(range.start, range.endInclusive).roundToInt().toFloat()
+        )
+    }
+    var showEditor by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var editText by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+
+    val updateStep: (Int) -> Unit = { delta ->
+        val next = (sliderValue.toInt() + delta)
+            .coerceIn(range.start.toInt(), range.endInclusive.toInt())
+            .toFloat()
+        if (next != sliderValue) {
+            sliderValue = next
+            onValueChange(next)
+        }
+    }
+    val latestUpdateStep by rememberUpdatedState(updateStep)
+    val parsedEditValue = editText.toIntOrNull()
+    val validEditValue = parsedEditValue?.takeIf {
+        it >= range.start.toInt() && it <= range.endInclusive.toInt()
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(24.dp)
     ) {
@@ -276,21 +309,47 @@ fun ConfigurationCard(
                     text = displayTransform?.invoke(sliderValue) ?: sliderValue.toInt().toString(),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable {
+                            editText = sliderValue.toInt().toString()
+                            showEditor = true
+                        }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Slider(
-                value = sliderValue,
-                onValueChange = { sliderValue = it },
-                onValueChangeFinished = { onValueChange(sliderValue) },
-                valueRange = range,
-                steps = 0
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                RepeatableStepButton(
+                    icon = { Icon(Icons.Rounded.Remove, contentDescription = null) },
+                    description = "Decrease $title",
+                    onStep = { latestUpdateStep(-1) }
+                )
+                Slider(
+                    modifier = Modifier.weight(1f),
+                    value = sliderValue,
+                    onValueChange = {
+                        sliderValue = it.roundToInt().toFloat().coerceIn(range.start, range.endInclusive)
+                    },
+                    onValueChangeFinished = { onValueChange(sliderValue) },
+                    valueRange = range,
+                    steps = 0
+                )
+                RepeatableStepButton(
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                    description = "Increase $title",
+                    onStep = { latestUpdateStep(1) }
+                )
+            }
 
             AnimatedVisibility(visible = effectiveValue != null && effectiveValue < sliderValue.toInt()) {
                 Box(
@@ -301,13 +360,91 @@ fun ConfigurationCard(
                         .padding(12.dp)
                 ) {
                     Text(
-                        "Hardware limited to $effectiveValue. Enable Shizuku for full resolution.",
+                        "Native Android volume provides $effectiveValue hardware steps. This mode works without Shizuku or root; public Android APIs do not expose per-app sub-step gain.",
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
         }
+    }
+
+    if (showEditor) {
+        AlertDialog(
+            onDismissRequest = { showEditor = false },
+            title = { Text("Set $title") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = editText,
+                        onValueChange = { editText = it.filter(Char::isDigit).take(4) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = { Text("Value") },
+                        supportingText = { Text("Allowed range: ${range.start.toInt()} to ${range.endInclusive.toInt()}") }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = validEditValue != null,
+                    onClick = {
+                        val next = validEditValue!!.toFloat()
+                        sliderValue = next
+                        onValueChange(next)
+                        showEditor = false
+                    }
+                ) { Text("Apply") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditor = false }) { Text("Cancel") }
+            }
+        )
+    }
+}
+
+@Composable
+private fun RepeatableStepButton(
+    icon: @Composable () -> Unit,
+    description: String,
+    onStep: () -> Unit
+) {
+    val latestOnStep by rememberUpdatedState(onStep)
+    Box(
+        modifier = Modifier
+            .size(42.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .pointerInput(Unit) {
+                kotlinx.coroutines.coroutineScope {
+                    val repeatScope = this
+                    detectTapGestures(
+                        onPress = {
+                            latestOnStep()
+                            val repeatJob = repeatScope.launch {
+                                delay(350L)
+                                while (isActive) {
+                                    latestOnStep()
+                                    delay(55L)
+                                }
+                            }
+                            tryAwaitRelease()
+                            repeatJob.cancel()
+                        }
+                    )
+                }
+            }
+            .semantics {
+                contentDescription = description
+                role = Role.Button
+                onClick(label = description) {
+                    latestOnStep()
+                    true
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        icon()
     }
 }
 

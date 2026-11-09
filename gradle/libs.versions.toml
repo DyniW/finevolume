@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.2.10"
-agp = "9.5.0"
+agp = "9.5.1"
 compose-bom = "2024.02.01"
 hilt = "2.60.1"
 datastore = "1.1.1"
@@ -41,8 +41,7 @@ truth = { group = "com.google.truth", name = "truth", version = "1.4.4" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+legacy-kapt = { id = "com.android.legacy-kapt", version.ref = "agp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 

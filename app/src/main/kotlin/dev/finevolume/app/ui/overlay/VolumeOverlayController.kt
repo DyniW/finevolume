@@ -919,7 +919,7 @@ fun ExpandedVolumeDialog(
                             callVol = v
                             val index = (v * callMax).toInt().coerceIn(0, callMax.toInt())
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, index, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                         },
                         onInteraction = onInteraction,
@@ -932,7 +932,7 @@ fun ExpandedVolumeDialog(
                         onTrailingIconClick = {
                             val target = if (callVol > 0f) 0 else (callMax * 0.5f).toInt()
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, target, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                             callVol = target / callMax
                         }
@@ -947,7 +947,7 @@ fun ExpandedVolumeDialog(
                             ringVol = v
                             val index = (v * ringMax).toInt().coerceIn(0, ringMax.toInt())
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_RING, index, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_RING, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                         },
                         onInteraction = onInteraction,
@@ -960,7 +960,7 @@ fun ExpandedVolumeDialog(
                         onTrailingIconClick = {
                             val target = if (ringVol > 0f) 0 else (ringMax * 0.5f).toInt()
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_RING, target, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_RING, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                             ringVol = target / ringMax
                         }
@@ -976,7 +976,7 @@ fun ExpandedVolumeDialog(
                                 notifVol = v
                                 val index = (v * notifMax).toInt().coerceIn(0, notifMax.toInt())
                                 try {
-                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, index, 0)
+                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                                 } catch (_: Throwable) {}
                             }
                         },
@@ -991,7 +991,7 @@ fun ExpandedVolumeDialog(
                             if (!isRingMuted) {
                                 val target = if (notifVol > 0f) 0 else (notifMax * 0.5f).toInt()
                                 try {
-                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, target, 0)
+                                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                                 } catch (_: Throwable) {}
                                 notifVol = target / notifMax
                             }
@@ -1025,7 +1025,7 @@ fun ExpandedVolumeDialog(
                             alarmVol = v
                             val index = (v * alarmMax).toInt().coerceIn(0, alarmMax.toInt())
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, index, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, index, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                         },
                         onInteraction = onInteraction,
@@ -1038,7 +1038,7 @@ fun ExpandedVolumeDialog(
                         onTrailingIconClick = {
                             val target = if (alarmVol > 0f) 0 else (alarmMax * 0.5f).toInt()
                             try {
-                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, target, 0)
+                                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, target, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE)
                             } catch (_: Throwable) {}
                             alarmVol = target / alarmMax
                         }
@@ -1270,6 +1270,7 @@ fun PixelHorizontalSlider(
     var lastReportedStep by remember { mutableStateOf(-1) }
     var lastHapticTime by remember { mutableStateOf(0L) }
     val density = LocalDensity.current
+    val hostView = androidx.compose.ui.platform.LocalView.current
     val res = resolution.coerceAtLeast(1)
 
     val animatedValue by animateFloatAsState(
@@ -1278,9 +1279,8 @@ fun PixelHorizontalSlider(
             dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessHigh
         ),
-        label = "h_slider_anim"
+        label = "oneui_horizontal_volume"
     )
-
     val percent = (animatedValue * 100f).roundToInt().coerceIn(0, 100)
 
     val triggerHaptic: () -> Unit = {
@@ -1288,166 +1288,47 @@ fun PixelHorizontalSlider(
             val now = android.os.SystemClock.uptimeMillis()
             if (now - lastHapticTime >= 35L) {
                 lastHapticTime = now
-                hapticFeedbackManager?.vibrate(hapticLevel)
+                hapticFeedbackManager?.vibrate(hostView, hapticLevel)
             }
         }
     }
 
-    val trackHeight = 56.dp
-    val dividerThickness = 5.5.dp
-    val dividerHeight = 66.dp
-    val gap = 3.dp
-
-    val dividerThicknessPx = with(density) { dividerThickness.toPx() }
-    val gapPx = with(density) { gap.toPx() }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(dividerHeight)
-            .onGloballyPositioned { coordinates ->
-                trackWidthPx = coordinates.size.width.toFloat()
-            }
-            .pointerInput(res, hapticLevel) {
-                detectHorizontalDragGestures(
-                    onDragStart = { isDragging = true; onInteraction() },
-                    onDragEnd = { isDragging = false; onInteraction() },
-                    onDragCancel = { isDragging = false; onInteraction() }
-                ) { change, _ ->
-                    change.consume()
-                    if (trackWidthPx > 0f) {
-                        val raw = (change.position.x / trackWidthPx).coerceIn(0f, 1f)
-                        val step = (raw * res.toFloat()).roundToInt().coerceIn(0, res)
-                        if (step != lastReportedStep) {
-                            lastReportedStep = step
-                            onValueChange(step.toFloat() / res)
-                            triggerHaptic()
-                        }
-                        onInteraction()
-                    }
-                }
-            }
-            .pointerInput(res, hapticLevel) {
-                detectTapGestures { offset ->
-                    if (trackWidthPx > 0f) {
-                        val raw = (offset.x / trackWidthPx).coerceIn(0f, 1f)
-                        val step = (raw * res.toFloat()).roundToInt().coerceIn(0, res)
-                        lastReportedStep = step
-                        onValueChange(step.toFloat() / res)
-                        triggerHaptic()
-                        onInteraction()
-                    }
-                }
-            }
-    ) {
-        if (trackWidthPx > 0f) {
-            val halfDiv = dividerThicknessPx / 2f
-            val dividerCenterPx = (animatedValue * trackWidthPx).coerceIn(halfDiv, trackWidthPx - halfDiv)
-            val dividerLeftPx = dividerCenterPx - halfDiv
-
-            // Active track capsule (left of divider center)
-            val activeEndPx = (dividerCenterPx - halfDiv - gapPx).coerceAtLeast(0f)
-            if (activeEndPx > 0f) {
-                val activeWidthDp = with(density) { activeEndPx.toDp() }
-                Box(
-                    modifier = Modifier
-                        .width(activeWidthDp)
-                        .height(trackHeight)
-                        .align(Alignment.CenterStart)
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = 14.dp,
-                                bottomStart = 14.dp,
-                                topEnd = if (animatedValue >= 0.99f) 14.dp else 4.dp,
-                                bottomEnd = if (animatedValue >= 0.99f) 14.dp else 4.dp
-                            )
-                        )
-                        .background(colors.activeColor)
-                )
-            }
-
-            // Inactive track capsule (right of divider center)
-            val inactiveStartPx = (dividerCenterPx + halfDiv + gapPx).coerceAtMost(trackWidthPx)
-            val inactiveWidthPx = (trackWidthPx - inactiveStartPx).coerceAtLeast(0f)
-            if (inactiveWidthPx > 0f) {
-                val inactiveStartDp = with(density) { inactiveStartPx.toDp() }
-                val inactiveWidthDp = with(density) { inactiveWidthPx.toDp() }
-                Box(
-                    modifier = Modifier
-                        .offset(x = inactiveStartDp)
-                        .width(inactiveWidthDp)
-                        .height(trackHeight)
-                        .align(Alignment.CenterStart)
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = if (animatedValue <= 0.01f) 14.dp else 4.dp,
-                                bottomStart = if (animatedValue <= 0.01f) 14.dp else 4.dp,
-                                topEnd = 14.dp,
-                                bottomEnd = 14.dp
-                            )
-                        )
-                        .background(colors.inactiveColor)
-                )
-            }
-
-            // Divider handle
-            val dividerLeftDp = with(density) { dividerLeftPx.toDp() }
-            Box(
-                modifier = Modifier
-                    .offset(x = dividerLeftDp)
-                    .requiredWidth(dividerThickness)
-                    .requiredHeight(dividerHeight)
-                    .align(Alignment.CenterStart)
-                    .clip(RoundedCornerShape(2.75.dp))
-                    .background(colors.activeColor)
-            )
-        }
-
-        // Inside the capsule: Title, App Icon, Live Percentage, and Trailing Icon
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        // Keep labels outside the active track. This prevents low-volume fill levels
+        // from running behind the title or percentage and making either unreadable.
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(trackHeight)
-                .align(Alignment.CenterStart)
-                .padding(horizontal = 14.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (leadingAppIcon != null) {
                 Image(
                     bitmap = leadingAppIcon,
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                    modifier = Modifier.size(24.dp).clip(RoundedCornerShape(6.dp))
                 )
                 Spacer(modifier = Modifier.width(10.dp))
             }
-
             Text(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (animatedValue > 0.25f) colors.onActiveColor else colors.onInactiveColor,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
+                modifier = Modifier.weight(1f)
             )
-
-            Spacer(modifier = Modifier.weight(1f))
-
             Text(
                 text = "$percent%",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (animatedValue > 0.68f) colors.onActiveColor else colors.onInactiveColor
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            Spacer(modifier = Modifier.width(6.dp))
-
+            Spacer(modifier = Modifier.width(8.dp))
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(36.dp)
+                    .clip(RoundedCornerShape(18.dp))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -1458,9 +1339,83 @@ fun PixelHorizontalSlider(
             ) {
                 Icon(
                     imageVector = trailingIcon,
-                    contentDescription = "$title, volume $percent percent",
-                    tint = if (animatedValue > 0.86f) colors.onActiveColor else colors.onInactiveColor,
+                    contentDescription = "$title volume toggle",
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+
+        val trackHeight = 42.dp
+        val dividerHeight = 52.dp
+        val dividerThickness = 5.dp
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(dividerHeight)
+                .onGloballyPositioned { trackWidthPx = it.size.width.toFloat() }
+                .pointerInput(res, hapticLevel) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { isDragging = true; onInteraction() },
+                        onDragEnd = { isDragging = false; onInteraction() },
+                        onDragCancel = { isDragging = false; onInteraction() }
+                    ) { change, _ ->
+                        change.consume()
+                        if (trackWidthPx > 0f) {
+                            val raw = (change.position.x / trackWidthPx).coerceIn(0f, 1f)
+                            val step = (raw * res).roundToInt().coerceIn(0, res)
+                            if (step != lastReportedStep) {
+                                lastReportedStep = step
+                                onValueChange(step.toFloat() / res)
+                                triggerHaptic()
+                            }
+                            onInteraction()
+                        }
+                    }
+                }
+                .pointerInput(res, hapticLevel) {
+                    detectTapGestures { offset ->
+                        if (trackWidthPx > 0f) {
+                            val raw = (offset.x / trackWidthPx).coerceIn(0f, 1f)
+                            val step = (raw * res).roundToInt().coerceIn(0, res)
+                            lastReportedStep = step
+                            onValueChange(step.toFloat() / res)
+                            triggerHaptic()
+                            onInteraction()
+                        }
+                    }
+                },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            // One UI-inspired capsule track with a separate moving divider.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(trackHeight)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colors.inactiveColor)
+            )
+            if (animatedValue > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedValue)
+                        .height(trackHeight)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.activeColor)
+                )
+            }
+            if (trackWidthPx > 0f) {
+                val halfDividerPx = with(density) { (dividerThickness / 2).toPx() }
+                val dividerLeftPx = (animatedValue * trackWidthPx - halfDividerPx)
+                    .coerceIn(0f, (trackWidthPx - halfDividerPx * 2).coerceAtLeast(0f))
+                Box(
+                    modifier = Modifier
+                        .offset(x = with(density) { dividerLeftPx.toDp() })
+                        .width(dividerThickness)
+                        .height(dividerHeight)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(colors.activeColor)
                 )
             }
         }
@@ -1491,6 +1446,7 @@ fun PixelVerticalSlider(
     var lastReportedStep by remember { mutableStateOf(-1) }
     var lastHapticTime by remember { mutableStateOf(0L) }
     val density = LocalDensity.current
+    val hostView = androidx.compose.ui.platform.LocalView.current
     val res = resolution.coerceAtLeast(1)
 
     val animatedVolume by animateFloatAsState(
@@ -1533,7 +1489,7 @@ fun PixelVerticalSlider(
                                 val now = android.os.SystemClock.uptimeMillis()
                                 if (now - lastHapticTime >= 35L) {
                                     lastHapticTime = now
-                                    hapticFeedbackManager?.vibrate(hapticLevel)
+                                    hapticFeedbackManager?.vibrate(hostView, hapticLevel)
                                 }
                             }
                         }
@@ -1552,7 +1508,7 @@ fun PixelVerticalSlider(
                             val now = android.os.SystemClock.uptimeMillis()
                             if (now - lastHapticTime >= 35L) {
                                 lastHapticTime = now
-                                hapticFeedbackManager?.vibrate(hapticLevel)
+                                hapticFeedbackManager?.vibrate(hostView, hapticLevel)
                             }
                         }
                         onInteraction()
