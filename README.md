@@ -26,7 +26,7 @@ This repository is a personal fork ([`DyniW/finevolume`](https://github.com/Dyni
 
 ## Personal Updates & Local Modifications
 
-- **Project Modifications:** Just merged oneui-volume-controls feature and persistent-per-app-volume fix from @tteja619 and it seems to correct the issues I had with the FineVolume app from broknhrt2562:
+- **Project Modifications:** Just merged oneui-volume-controls feature and persistent-per-app-volume fix from @tteja619 and it seems to correct the issues I had with the FineVolume app from @broknhrt2562:
   - No more losing precise volume control whenever an audio focus change occurs (changing a track or switching apps)
   - Add fine-tuning buttons for in-app settings
 - **Environment & Build Config:** Updated to align with Kotlin 2.4.0 and configured JitPack dependencies.
